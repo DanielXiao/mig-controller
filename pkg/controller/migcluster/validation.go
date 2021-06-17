@@ -340,12 +340,12 @@ func (r *ReconcileMigCluster) validateSaTokenPrivileges(ctx context.Context, clu
 	}
 
 	// check for access to all verbs on all resources in all namespaces
-	// in the migration.openshift.io and velero.io groups in order to
+	// in the migrator.run.tanzu.vmware.com and velero.io groups in order to
 	// determine if the service account has sufficient permissions
 	migrationSar := auth.SelfSubjectAccessReview{
 		Spec: auth.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &auth.ResourceAttributes{
-				Group:    "migration.openshift.io",
+				Group:    "migrator.run.tanzu.vmware.com",
 				Resource: "*",
 				Verb:     "*",
 				Version:  "*",

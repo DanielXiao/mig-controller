@@ -6,7 +6,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.3.0
   creationTimestamp: null
-  name: migstorages.migration.openshift.io
+  name: migstorages.migrator.run.tanzu.vmware.com
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=='Ready')].status
@@ -21,13 +21,12 @@ spec:
   - JSONPath: .metadata.creationTimestamp
     name: Age
     type: date
-  group: migration.openshift.io
+  group: migrator.run.tanzu.vmware.com
   names:
     kind: MigStorage
     listKind: MigStorageList
     plural: migstorages
     singular: migstorage
-  preserveUnknownFields: false
   scope: Namespaced
   subresources: {}
   validation:

@@ -19,5 +19,5 @@ limitations under the License.
 // +k8s:deepcopy-gen=package,register
 // +k8s:conversion-gen=github.com/konveyor/mig-controller/pkg/apis/migration
 // +k8s:defaulter-gen=TypeMeta
-// +groupName=migration.openshift.io
+// +groupName=migrator.run.tanzu.vmware.com
 package v1alpha1
