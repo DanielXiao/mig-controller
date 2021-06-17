@@ -28,9 +28,11 @@ func (t *Task) quiesceApplications() error {
 	if err != nil {
 		return liberr.Wrap(err)
 	}
-	err = t.quiesceDeploymentConfigs(client)
-	if err != nil {
-		return liberr.Wrap(err)
+	if t.PlanResources.SrcMigCluster.Spec.Vendor == migapi.OpenShift {
+		err = t.quiesceDeploymentConfigs(client)
+		if err != nil {
+			return liberr.Wrap(err)
+		}
 	}
 	err = t.quiesceDeployments(client)
 	if err != nil {
@@ -88,9 +90,11 @@ func (t *Task) unQuiesceApplications(client k8sclient.Client, namespaces []strin
 	if err != nil {
 		return liberr.Wrap(err)
 	}
-	err = t.unQuiesceDeploymentConfigs(client, namespaces)
-	if err != nil {
-		return liberr.Wrap(err)
+	if t.PlanResources.SrcMigCluster.Spec.Vendor == migapi.OpenShift {
+		err = t.unQuiesceDeploymentConfigs(client, namespaces)
+		if err != nil {
+			return liberr.Wrap(err)
+		}
 	}
 	err = t.unQuiesceDeployments(client, namespaces)
 	if err != nil {

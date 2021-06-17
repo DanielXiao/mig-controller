@@ -292,7 +292,7 @@ func (t *Task) ensureStagePodsFromTemplates() error {
 
 	t.Log.Info("Getting list of Stage Pods to create for DeploymentConfigs, Deployments, " +
 		"Daemonsets, ReplicaSets, CronJobs, Jobs on source cluster")
-	podTemplates, err := migpods.ListTemplatePods(client, t.sourceNamespaces())
+	podTemplates, err := migpods.ListTemplatePods(client, t.sourceNamespaces(), t.PlanResources.SrcMigCluster.Spec.Vendor)
 	if err != nil {
 		return liberr.Wrap(err)
 	}

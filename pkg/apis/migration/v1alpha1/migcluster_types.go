@@ -71,6 +71,21 @@ const (
 	RegistryDefaultProbeTimeout = 3
 )
 
+// Vendor describes the Kubernetes vendor.
+// Only one of the following vendors may be specified.
+// If none of the following policies is specified, the default one
+// is NoVendor.
+// +kubebuilder:validation:Enum=NoVendor;OpenShift;TKGI;TKGS;TKGM
+type Vendor string
+
+const (
+	NoVendor  Vendor = "NoVendor"
+	OpenShift Vendor = "OpenShift"
+	TKGI      Vendor = "TKGI"
+	TKGS      Vendor = "TKGS"
+	TKGM      Vendor = "TKGM"
+)
+
 // MigClusterSpec defines the desired state of MigCluster
 type MigClusterSpec struct {
 	// Specifies if the cluster is host (where the controller is installed) or not. This is a required field.
@@ -98,6 +113,16 @@ type MigClusterSpec struct {
 
 	// Stores the path of registry route when using direct migration.
 	ExposedRegistryPath string `json:"exposedRegistryPath,omitempty"`
+
+	// Identify what is the cluster vendor
+	// Valid values are:
+	// - "NoVendor" (default): a native K8s cluster;
+	// - "OpenShift": a OpenShift cluster;
+	// - "TKGI": a TKG integrated cluster;
+	// - "TKGS": a TKG service cluster;
+	// - "TKGM": a TKG multi-cloud cluster;
+	Vendor  Vendor `json:"vendor"`
+	Version string `json:"version,omitempty"`
 }
 
 // MigClusterStatus defines the observed state of MigCluster

@@ -2,6 +2,7 @@ package pods
 
 import (
 	"context"
+	migapi "github.com/konveyor/mig-controller/pkg/apis/migration/v1alpha1"
 
 	ocappsv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -13,7 +14,7 @@ import (
 )
 
 // ListTemplatePods - get list of pod templates, associated with a plan resource
-func ListTemplatePods(client k8sclient.Client, namespaces []string) ([]corev1.Pod, error) {
+func ListTemplatePods(client k8sclient.Client, namespaces []string, vendor migapi.Vendor) ([]corev1.Pod, error) {
 	pods := []corev1.Pod{}
 
 	for _, ns := range namespaces {
@@ -23,11 +24,13 @@ func ListTemplatePods(client k8sclient.Client, namespaces []string) ([]corev1.Po
 		}
 		pods = append(pods, newPods...)
 
-		newPods, err = listDeploymentConfigTemplatePodsForNamespace(client, ns)
-		if err != nil {
-			return nil, err
+		if vendor == migapi.OpenShift {
+			newPods, err = listDeploymentConfigTemplatePodsForNamespace(client, ns)
+			if err != nil {
+				return nil, err
+			}
+			pods = append(pods, newPods...)
 		}
-		pods = append(pods, newPods...)
 
 		newPods, err = listReplicationControllerTemplatePodsForNamespace(client, ns)
 		if err != nil {

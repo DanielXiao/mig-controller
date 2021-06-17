@@ -139,8 +139,23 @@ spec:
               description: Stores the url of the remote cluster. The field is only
                 required for the source cluster object.
               type: string
+            vendor:
+              description: 'Identify what is the cluster vendor Valid values are:
+                - "NoVendor" (default): a native K8s cluster; - "OpenShift": a OpenShift
+                cluster; - "TKGI": a TKG integrated cluster; - "TKGS": a TKG service
+                cluster; - "TKGM": a TKG multi-cloud cluster;'
+              enum:
+              - NoVendor
+              - OpenShift
+              - TKGI
+              - TKGS
+              - TKGM
+              type: string
+            version:
+              type: string
           required:
           - isHostCluster
+          - vendor
           type: object
         status:
           description: MigClusterStatus defines the observed state of MigCluster

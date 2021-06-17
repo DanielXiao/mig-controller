@@ -111,7 +111,7 @@ func (r *ReconcileMigPlan) updatePvs(ctx context.Context, plan *migapi.MigPlan) 
 	if err != nil {
 		return liberr.Wrap(err)
 	}
-	claims, err := r.getClaims(srcClient, plan)
+	claims, err := r.getClaims(srcClient, plan, srcMigCluster.Spec.Vendor)
 	if err != nil {
 		return liberr.Wrap(err)
 	}
@@ -217,7 +217,7 @@ func (r *ReconcileMigPlan) getPvMap(client k8sclient.Client) (PvMap, error) {
 }
 
 // Get a list of PVCs found within the specified namespaces.
-func (r *ReconcileMigPlan) getClaims(client k8sclient.Client, plan *migapi.MigPlan) (Claims, error) {
+func (r *ReconcileMigPlan) getClaims(client k8sclient.Client, plan *migapi.MigPlan, vendor migapi.Vendor) (Claims, error) {
 	claims := Claims{}
 	list := &core.PersistentVolumeClaimList{}
 	err := client.List(context.TODO(), list, &k8sclient.ListOptions{})
@@ -225,7 +225,7 @@ func (r *ReconcileMigPlan) getClaims(client k8sclient.Client, plan *migapi.MigPl
 		return nil, liberr.Wrap(err)
 	}
 
-	podList, err := migpods.ListTemplatePods(client, plan.GetSourceNamespaces())
+	podList, err := migpods.ListTemplatePods(client, plan.GetSourceNamespaces(), vendor)
 	if err != nil {
 		return nil, liberr.Wrap(err)
 	}
