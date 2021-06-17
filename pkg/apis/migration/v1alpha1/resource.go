@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	TouchAnnotation             = "openshift.io/touch"
-	VeleroNamespace             = "openshift-migration"
-	OpenshiftMigrationNamespace = "openshift-migration"
+	TouchAnnotation             = "migrator.run.tanzu.vmware.com/touch"
+	VeleroNamespace             = "velero"
+	OpenshiftMigrationNamespace = "tanzu-migration"
 )
 
 // Plan

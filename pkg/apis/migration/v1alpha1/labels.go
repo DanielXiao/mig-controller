@@ -10,7 +10,7 @@ import (
 // Common labels
 const (
 	PartOfLabel = "app.kubernetes.io/part-of" // = Application
-	Application = "openshift-migration"
+	Application = "tanzu-migration"
 )
 
 // Build label (key, value) used to correlate CRs.
@@ -47,25 +47,25 @@ const (
 	// Identifies the resource as migrated by us
 	// for easy search or application rollback.
 	// The value is the Task.UID().
-	MigMigrationLabel = "migration.openshift.io/migrated-by-migmigration" // (migmigration UID)
+	MigMigrationLabel = "migrator.run.tanzu.vmware.com/migrated-by-migmigration" // (migmigration UID)
 	// Identifies associated migmigration
 	// to assist manual debugging
 	// The value is Task.Owner.Name
-	MigMigrationDebugLabel = "migration.openshift.io/migmigration-name"
+	MigMigrationDebugLabel = "migrator.run.tanzu.vmware.com/migmigration-name"
 	// Identifies associated migplan
 	// to assist manual debugging
 	// The value is Task.Owner.Spec.migPlanRef.Name
-	MigPlanDebugLabel = "migration.openshift.io/migplan-name"
+	MigPlanDebugLabel = "migrator.run.tanzu.vmware.com/migplan-name"
 	// Identifies associated migplan
 	// to allow migplan restored resources rollback
 	// The value is Task.PlanResources.MigPlan.UID
-	MigPlanLabel = "migration.openshift.io/migrated-by-migplan" // (migplan UID)
+	MigPlanLabel = "migrator.run.tanzu.vmware.com/migrated-by-migplan" // (migplan UID)
 	// Identifies associated Backup name
-	MigBackupLabel = "migration.openshift.io/migrated-by-backup" // (backup name)
+	MigBackupLabel = "migrator.run.tanzu.vmware.com/migrated-by-backup" // (backup name)
 	// Identifies Pod as a stage pod to allow
 	// for cleanup at migration start and rollback
 	// The value is always "true" if set.
-	StagePodLabel = "migration.openshift.io/is-stage-pod"
+	StagePodLabel = "migrator.run.tanzu.vmware.com/is-stage-pod"
 	// RsyncPodIdentityLabel identifies sibling Rsync attempts/pods
-	RsyncPodIdentityLabel = "migration.openshift.io/created-for-pvc"
+	RsyncPodIdentityLabel = "migrator.run.tanzu.vmware.com/created-for-pvc"
 )

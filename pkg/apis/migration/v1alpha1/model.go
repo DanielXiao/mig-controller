@@ -19,8 +19,8 @@ import (
 ///
 
 const (
-	MigplanMigrationRunning = "migplan.migration.openshift.io/running"
-	MigplanMigrationFailed  = "migplan.migration.openshift.io/failed"
+	MigplanMigrationRunning = "migplan.migrator.run.tanzu.vmware.com/running"
+	MigplanMigrationFailed  = "migplan.migrator.run.tanzu.vmware.com/failed"
 )
 
 // List `open` MigPlans
