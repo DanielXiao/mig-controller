@@ -260,23 +260,18 @@ func (r *ReconcileMigPlan) Reconcile(ctx context.Context, request reconcile.Requ
 		return reconcile.Result{Requeue: true}, nil
 	}
 
+	//TODO: enable below check
+
 	// Validate NFS PV accessibility.
-	nfsValidation := NfsValidation{Plan: plan}
-	err = nfsValidation.Run(r.Client)
-	if err != nil {
-		log.Trace(err)
-		return reconcile.Result{Requeue: true}, nil
-	}
+	//nfsValidation := NfsValidation{Plan: plan}
+	//err = nfsValidation.Run(r.Client)
+	//if err != nil {
+	//	log.Trace(err)
+	//	return reconcile.Result{Requeue: true}, nil
+	//}
 
 	// Validate PV actions.
 	err = r.validatePvSelections(ctx, plan)
-	if err != nil {
-		log.Trace(err)
-		return reconcile.Result{Requeue: true}, nil
-	}
-
-	// Storage
-	err = r.ensureStorage(ctx, plan)
 	if err != nil {
 		log.Trace(err)
 		return reconcile.Result{Requeue: true}, nil
@@ -300,7 +295,7 @@ func (r *ReconcileMigPlan) Reconcile(ctx context.Context, request reconcile.Requ
 
 	// Ready
 	plan.Status.SetReady(
-		plan.Status.HasCondition(StorageEnsured, PvsDiscovered) &&
+		plan.Status.HasCondition(PvsDiscovered) &&
 			!plan.Status.HasBlockerCondition(),
 		"The migration plan is ready.")
 
