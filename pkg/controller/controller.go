@@ -17,12 +17,7 @@ limitations under the License.
 package controller
 
 import (
-	"github.com/konveyor/mig-controller/pkg/controller/directimagemigration"
-	"github.com/konveyor/mig-controller/pkg/controller/directimagestreammigration"
-	"github.com/konveyor/mig-controller/pkg/controller/directvolumemigration"
-	"github.com/konveyor/mig-controller/pkg/controller/directvolumemigrationprogress"
 	"github.com/konveyor/mig-controller/pkg/controller/discovery"
-	"github.com/konveyor/mig-controller/pkg/controller/miganalytic"
 	"github.com/konveyor/mig-controller/pkg/controller/migcluster"
 	"github.com/konveyor/mig-controller/pkg/controller/mighook"
 	"github.com/konveyor/mig-controller/pkg/controller/migmigration"
@@ -42,14 +37,11 @@ type AddFunction func(manager.Manager) error
 var CamControllers = []AddFunction{
 	migcluster.Add,
 	migmigration.Add,
-	directimagemigration.Add,
-	directimagestreammigration.Add,
 	mighook.Add,
 	migstorage.Add,
 	migplan.Add,
-	miganalytic.Add,
-	directvolumemigration.Add,
-	directvolumemigrationprogress.Add,
+	// TODO enable analytics
+	// miganalytic.Add,
 }
 
 //
