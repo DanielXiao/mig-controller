@@ -94,12 +94,6 @@ func (r ReconcileMigCluster) validate(ctx context.Context, cluster *migapi.MigCl
 		return liberr.Wrap(err)
 	}
 
-	// cluster version
-	err = r.validateOperatorVersionMatchesHost(ctx, cluster)
-	if err != nil {
-		return liberr.Wrap(err)
-	}
-
 	return nil
 }
 
