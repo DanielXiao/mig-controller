@@ -1,22 +1,22 @@
-apiVersion: migration.openshift.io/v1alpha1
+apiVersion: migrator.run.tanzu.vmware.com/v1alpha1
 kind: MigMigration
 metadata:
   labels:
     controller-tools.k8s.io: "1.0"
-  name: migmigration-sample
-  namespace: openshift-migration
+  name: mig-gb-stage
+  namespace: tanzu-migrator
 spec:
   # [!] Set 'canceled: true' will cancel the migration
   canceled: false
   # [!] Set 'rollback: true' will rollback the migration's plan
-  rollback: true
+  rollback: false
   # [!] Set 'stage: true' to run a 'Stage Migration' and skip quiescing of Pods on the source cluster.
-  stage: false
+  stage: true
   # [!] Set 'quiescePods: true' to scale down Pods on the source cluster after the 'Backup' stage of a migration has finished
   quiescePods: false
   # [!] Set 'keepAnnotations: true' to retain labels and annotations applied by the migration
   keepAnnotations: false
 
   migPlanRef:
-    name: migplan-sample
-    namespace: openshift-migration
+    name: plan-gb
+    namespace: tanzu-migrator

@@ -1,0 +1,27 @@
+apiVersion: migrator.run.tanzu.vmware.com/v1alpha1
+kind: MigPlan
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: plan-gb
+  namespace: tanzu-migrator
+spec:
+
+  srcMigClusterRef:
+    name: tkgi-1
+    namespace: tanzu-migrator
+
+  destMigClusterRef:
+    name: tkgm-3
+    namespace: tanzu-migrator
+
+  # [!] Change namespaces to adjust which namespaces should be migrated from source to destination cluster
+  namespaces:
+  - guestbook
+
+  # [!] Change refresh to 'true' to force a manual reconcile
+  refresh: false
+
+  # Not support direct migration
+  indirectImageMigration: true
+  indirectVolumeMigration: true

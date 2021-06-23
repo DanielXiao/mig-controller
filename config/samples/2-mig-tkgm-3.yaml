@@ -1,0 +1,26 @@
+apiVersion: migrator.run.tanzu.vmware.com/v1alpha1
+kind: MigCluster
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: tkgm-3
+  namespace: tanzu-migrator
+spec:
+  # [!] Change isHostCluster to 'true' if you'll be running the controller on this cluster.
+  #     Setting 'isHostCluster' to true will bypass using the clusterRef and serviceAccountSecretRef below.
+  isHostCluster: false
+  insecure: false
+  url: "https://20.20.0.12:6443"
+  # Copy certificate-authority-data in kubeconfig here
+  caBundle: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN5ekNDQWJPZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1EVXlOekE1TWpVMU0xb1hEVE14TURVeU5UQTVNekExTTFvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTkl2CkR4RjV2V0FqZU9VcDEyUEtUVzU0UHppUUhRLzgreW5ockVSWFlYbm5COFdzSXk4L1ZyTUdjdlp5dERyYlMrUkIKOGVaMUphK2hVYjBnUEliWFc1dnJDdFBMUmpwazFkTGRUVzZwSytwMmV0eDVQc3hPdmFkNjVNYmwvR2hkZ21wLwp6UlRGVzFpaUZCSEtIOU5CV0lDTnNaY3phUGt2NEIzaE8rN0ZmajE4SmdIWU52d1ArVVMyeXdRZUlNSFJXcDJPCk4vRFJTdkphdm9NRlM5TnA1dU1oSTl1R2dQdER0K0VtYzAvMlcwOFBWR2dUOFllcTREWE41bGFUVHJpaHVvR0MKbTYycWxxalhGYm4wSnF1UklmOE0yZVF5VWNLdDF4VUFmem8rT1luYjNtRndBa0d2aDBGVlU3NlJCMms2aWtGeApvQUdnbWU2SVQ2R2xwbjVJZ3FzQ0F3RUFBYU1tTUNRd0RnWURWUjBQQVFIL0JBUURBZ0trTUJJR0ExVWRFd0VCCi93UUlNQVlCQWY4Q0FRQXdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRHBIQXFVcEpZeFpSUmtmdnp3L1U2QnkKeWorQTRhYllUbDBXS0VYRHdmYUVseC9zcVAxVkVoWnd5SW00RW9ZN0lGbmo3OTBoK0RrWmFRY2NqNHJEOWVzYQo3a05zdUNFTE9NU0lVQlZJakNQWXo1UWlmSGNiWmtVRTBHSERrR2V6cnBQQ21tWXVmYkw2UFNkYVB2QmsvbHJhCmFuV3FuK3lpajdaUFFhcUV4aDlJc1pUZ3kvMmE3dER6M3gxWmtZZzcwd3hKZzEyNTFQUUVJMEVVZVlBMXcwQUwKSUhtQWludGc3Zi9JT3ptVUVkNkV3K2hzcEpWQml0ZDRBYUNLTWNidG5QTEdFZDVXK2psVjVwbEhrZGNEYmxSaAo4SmQ2T3RJRlhUb0Y4WGRXNjJKOWhKbGNEbmRDUEErQndibUVUWmxBdlB2TTByKzZtcnQ2cnMvNWRVVHRML2s9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0="
+
+  serviceAccountSecretRef:
+    name: sa-token-tkgm-3
+    namespace: tanzu-config
+
+  # [!] Change refresh to 'true' to force a manual reconcile
+  refresh: false
+
+  # Mark the cluster type and version
+  vendor: TKGM
+  version: "1.2.1"

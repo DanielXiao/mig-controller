@@ -1,0 +1,26 @@
+apiVersion: migrator.run.tanzu.vmware.com/v1alpha1
+kind: MigCluster
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: tkgi-1
+  namespace: tanzu-migrator
+spec:
+  # [!] Change isHostCluster to 'true' if you'll be running the controller on this cluster.
+  #     Setting 'isHostCluster' to true will bypass using the clusterRef and serviceAccountSecretRef below.
+  isHostCluster: false
+  insecure: false
+  url: "https://tkgi-1.tkgi.local:8443"
+  # Copy certificate-authority-data in kubeconfig here
+  caBundle: "Ci0tLS0tQkVHSU4gQ0VSVElGSUNBVEUtLS0tLQpNSUlDK3pDQ0FlT2dBd0lCQWdJVUVISm5SUi9qemd2d25rVHNWa1ZhNGs5TnVjd3dEUVlKS29aSWh2Y05BUUVMCkJRQXdEVEVMTUFrR0ExVUVBeE1DWTJFd0hoY05NakV3TlRJMU1EYzFPREUzV2hjTk1qVXdOVEkxTURjMU9ERTMKV2pBTk1Rc3dDUVlEVlFRREV3SmpZVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQgpBTEdCS1FaREpWcDFBd2U5b0x5MDBJMkptYTdxajJYWUN3ejZYOGhHS3doYktDSU5GTTA3VjdwWDZUVVhCeWYrCjJSc0YyWnovKzNrM2ZWRlkrZkdQdzNVK2dKUnowUTgrVWxDMFI4SzhnM1MrenJYSU10WTB0ejF5VjdnenRuY3cKaWdva3hIU29VTUtWVENFUFlTNS9GMXVMajRWZGpMREd5c3VZMlBrVFNkZDR1S1dldnVUVHg0QUtHckhQVG5uZgpQNDF4WFJSWm03ZWtubVJ2eVcwa2lHRFJuZVY3NWFMbXlVeXVJZnZMdnZ4U0lkbGFIYXJidW1pMG93MU9KNUNYCnJwNFdmd3pkaTVlVUVmaUVkakp3WEhEYXcvSWtlcUNuSzhYdm04K0pkaFR5eDA4MmlrS08wanBFN09yTzdKdXAKUkd1ZDJuL2xDVzdUd045dXhYRTZjTzBDQXdFQUFhTlRNRkV3SFFZRFZSME9CQllFRk95VmtlTXVwRWdVWEF2RwppRmdjR1FLNkRqQi9NQjhHQTFVZEl3UVlNQmFBRk95VmtlTXVwRWdVWEF2R2lGZ2NHUUs2RGpCL01BOEdBMVVkCkV3RUIvd1FGTUFNQkFmOHdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBS0dyR1JTdmk4bkFWazVKQ2E0VmJKQ2kKc25iUGx5Z3U2Qnk1WHN5R0lXY1MrZTgwUlExdGxLS2owSkFOK3VYWGpDUk0rUGVFaS91cU9zd2hEdWUzUlI1cQpKTmZXRU9OWjFHVWdFT2V0ZHlUcCtMcmR2bUhRU05nY29MdHF1bkN3OE8zMWhuenIyc2Nla2hDRnl5Z0w5b1c5CjF2VFhFRkZoM2xYTVcxQy9mWnhOYm15Y3RkSmJ2WU1UZ3RERlZ0NloyckppcHZUVnBCUk16YllPb2ZZRVFyR2kKMldiWUNYL29yR0Uwd3kyeGZrRzZsSnFKR0ZnOVhSaktOT2RSQkFlbUVzL01jQmw1Wm4ydk16Mmh0U3p6M1F5dwp3WUJhTjF6Q0c5Zms4N1pxa2tEZmxQdCthWW0vWXlRNUNMSjdUK3VmcVV5OVZZR252WStTcEt2S1pYSGhoZUU9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0="
+
+  serviceAccountSecretRef:
+    name: sa-token-tkgi-1
+    namespace: tanzu-config
+
+  # [!] Change refresh to 'true' to force a manual reconcile
+  refresh: false
+
+  # Mark the cluster type and version
+  vendor: TKGI
+  version: "1.10.0"
