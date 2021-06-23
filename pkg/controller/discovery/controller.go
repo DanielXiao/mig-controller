@@ -154,15 +154,6 @@ func (r *ReconcileDiscovery) Reconcile(ctx context.Context, request reconcile.Re
 		return reconcile.Result{Requeue: false}, nil
 	}
 	containers := []container.Collection{
-		&container.Backup{},
-		&container.Restore{},
-		&container.DirectVolumeMigration{},
-		&container.DirectImageMigration{},
-		&container.DirectVolumeMigrationProgress{},
-		&container.DirectImageStreamMigration{},
-		&container.Hook{},
-		&container.PodVolumeBackup{},
-		&container.PodVolumeRestore{},
 		&container.Namespace{},
 		&container.Service{},
 		&container.Route{},
