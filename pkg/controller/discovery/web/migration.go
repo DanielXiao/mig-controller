@@ -75,8 +75,8 @@ func (h *MigrationHandler) getSAR() auth.SelfSubjectAccessReview {
 	return auth.SelfSubjectAccessReview{
 		Spec: auth.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &auth.ResourceAttributes{
-				Group:     "apps",
-				Resource:  "MigMigration",
+				Group:     "migrator.run.tanzu.vmware.com",
+				Resource:  "migmigrations",
 				Namespace: h.migration.Namespace,
 				Name:      h.migration.Name,
 				Verb:      "get",

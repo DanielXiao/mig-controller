@@ -110,8 +110,8 @@ func (h *PlanHandler) getSAR() auth.SelfSubjectAccessReview {
 	return auth.SelfSubjectAccessReview{
 		Spec: auth.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &auth.ResourceAttributes{
-				Group:     "apps",
-				Resource:  "MigPlan",
+				Group:     "migrator.run.tanzu.vmware.com",
+				Resource:  "migplans",
 				Namespace: h.plan.Namespace,
 				Name:      h.plan.Name,
 				Verb:      "get",

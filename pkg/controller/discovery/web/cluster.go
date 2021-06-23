@@ -63,16 +63,16 @@ func (h *ClusterScoped) getSAR() auth.SelfSubjectAccessReview {
 	sr := h.cluster.DecodeObject().Spec.ServiceAccountSecretRef
 	if sr != nil {
 		attributes = &auth.ResourceAttributes{
-			Group:     "apps",
-			Resource:  "secret",
+			Group:     "",
+			Resource:  "secrets",
 			Namespace: sr.Namespace,
 			Name:      sr.Name,
 			Verb:      "get",
 		}
 	} else {
 		attributes = &auth.ResourceAttributes{
-			Group:     "apps",
-			Resource:  "MigCluster",
+			Group:     "migrator.run.tanzu.vmware.com",
+			Resource:  "migclusters",
 			Namespace: h.cluster.Namespace,
 			Name:      h.cluster.Name,
 			Verb:      "get",
