@@ -163,15 +163,6 @@ type PlanResources struct {
 
 // GetRefResources gets referenced resources from a MigPlan.
 func (r *MigPlan) GetRefResources(client k8sclient.Client) (*PlanResources, error) {
-	// MigStorage
-	storage, err := r.GetStorage(client)
-	if err != nil {
-		return nil, err
-	}
-	if storage == nil {
-		return nil, errors.New("storage not found")
-	}
-
 	// SrcMigCluster
 	srcMigCluster, err := r.GetSourceCluster(client)
 	if err != nil {
@@ -192,7 +183,6 @@ func (r *MigPlan) GetRefResources(client k8sclient.Client) (*PlanResources, erro
 
 	resources := &PlanResources{
 		MigPlan:        r,
-		MigStorage:     storage,
 		SrcMigCluster:  srcMigCluster,
 		DestMigCluster: destMigCluster,
 	}

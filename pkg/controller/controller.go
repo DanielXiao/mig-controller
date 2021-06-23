@@ -22,7 +22,6 @@ import (
 	"github.com/konveyor/mig-controller/pkg/controller/mighook"
 	"github.com/konveyor/mig-controller/pkg/controller/migmigration"
 	"github.com/konveyor/mig-controller/pkg/controller/migplan"
-	"github.com/konveyor/mig-controller/pkg/controller/migstorage"
 	"github.com/konveyor/mig-controller/pkg/settings"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -38,7 +37,6 @@ var CamControllers = []AddFunction{
 	migcluster.Add,
 	migmigration.Add,
 	mighook.Add,
-	migstorage.Add,
 	migplan.Add,
 	// TODO enable analytics
 	// miganalytic.Add,

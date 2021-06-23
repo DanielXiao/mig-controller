@@ -135,12 +135,6 @@ func (r ReconcileMigPlan) validate(ctx context.Context, plan *migapi.MigPlan) er
 		return liberr.Wrap(err)
 	}
 
-	// Storage
-	err = r.validateStorage(ctx, plan)
-	if err != nil {
-		return liberr.Wrap(err)
-	}
-
 	// Migrated namespaces.
 	err = r.validateNamespaces(ctx, plan)
 	if err != nil {
@@ -166,12 +160,6 @@ func (r ReconcileMigPlan) validate(ctx context.Context, plan *migapi.MigPlan) er
 		return liberr.Wrap(err)
 	}
 
-	// Registry proxy secret
-	err = r.validateRegistryProxySecrets(ctx, plan)
-	if err != nil {
-		return liberr.Wrap(err)
-	}
-
 	// Validate health of Pods
 	err = r.validatePodHealth(ctx, plan)
 	if err != nil {
@@ -186,12 +174,6 @@ func (r ReconcileMigPlan) validate(ctx context.Context, plan *migapi.MigPlan) er
 
 	// GVK
 	err = r.compareGVK(ctx, plan)
-	if err != nil {
-		return liberr.Wrap(err)
-	}
-
-	// Versions
-	err = r.validateOperatorVersions(ctx, plan)
 	if err != nil {
 		return liberr.Wrap(err)
 	}

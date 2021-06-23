@@ -99,17 +99,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to MigStorage referenced by MigPlans
-	err = c.Watch(
-		&source.Kind{Type: &migapi.MigStorage{}},
-		handler.EnqueueRequestsFromMapFunc(func(a client.Object) []reconcile.Request {
-			return migref.GetRequests(a, migapi.MigPlan{})
-		}),
-		&StoragePredicate{})
-	if err != nil {
-		return err
-	}
-
 	// Watch for changes to MigMigrations.
 	err = c.Watch(
 		&source.Kind{Type: &migapi.MigMigration{}},
