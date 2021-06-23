@@ -10,7 +10,7 @@ import (
 // Common labels
 const (
 	PartOfLabel = "app.kubernetes.io/part-of" // = Application
-	Application = "tanzu-migration"
+	Application = "tanzu-migrator"
 )
 
 // Build label (key, value) used to correlate CRs.
