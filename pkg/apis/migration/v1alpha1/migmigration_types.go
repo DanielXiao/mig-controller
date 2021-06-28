@@ -74,13 +74,17 @@ func (s *MigMigrationStatus) FindStep(stepName string) *Step {
 
 // AddStep adds a new step to the pipeline
 func (s *MigMigrationStatus) AddStep(step *Step) {
-	found := s.FindStep(step.Name)
-	if found == nil {
-		s.Pipeline = append(
-			s.Pipeline,
-			step,
-		)
+	index := -1
+	for i, e := range s.Pipeline {
+		if e.Name == step.Name {
+			index = i
+		}
 	}
+	// Remove the same name step. Fail itinerary also has step Completed which should be the last one.
+	if index > 0 {
+		s.Pipeline = append(s.Pipeline[:index], s.Pipeline[index+1:]...)
+	}
+	s.Pipeline = append(s.Pipeline, step)
 }
 
 // ReflectPipeline reflects pipeline
