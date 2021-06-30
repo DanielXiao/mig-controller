@@ -18,6 +18,11 @@ import (
 type PvMap map[k8sclient.ObjectKey]core.PersistentVolume
 type Claims []migapi.PVC
 
+const (
+	VSphereInTreeDriverName = "kubernetes.io/vsphere-volume"
+	VSphereCSIDriverName    = "csi.vsphere.vmware.com"
+)
+
 // Update the PVs listed on the plan.
 func (r *ReconcileMigPlan) updatePvs(ctx context.Context, plan *migapi.MigPlan) error {
 	if opentracing.SpanFromContext(ctx) != nil {
@@ -134,7 +139,7 @@ func (r *ReconcileMigPlan) updatePvs(ctx context.Context, plan *migapi.MigPlan) 
 				Capacity:     pv.Spec.Capacity[core.ResourceStorage],
 				StorageClass: getStorageClassName(pv),
 				Supported: migapi.Supported{
-					Actions:     r.getSupportedActions(pv, claim),
+					Actions:     r.getSupportedActions(pv, srcStorageClasses, destStorageClasses),
 					CopyMethods: r.getSupportedCopyMethods(pv),
 				},
 				Selection: selection,
@@ -267,23 +272,30 @@ func (r *ReconcileMigPlan) getClaims(client k8sclient.Client, plan *migapi.MigPl
 	return claims, nil
 }
 
-// Determine the supported PV actions.
-func (r *ReconcileMigPlan) getSupportedActions(pv core.PersistentVolume, claim migapi.PVC) []string {
-	supportedActions := []string{}
-	if !claim.HasReference {
-		supportedActions = append(supportedActions, migapi.PvSkipAction)
-	}
+// Determine the supported PV actions. Return in order skip, copy, move
+func (r *ReconcileMigPlan) getSupportedActions(pv core.PersistentVolume, srcStorageClasses, destStorageClasses []migapi.StorageClass) []string {
+	supportedActions := []string{migapi.PvSkipAction}
 	if pv.Spec.HostPath != nil {
 		return supportedActions
 	}
-	// TODO: Consider adding Cinder to this default list
-	if pv.Spec.NFS != nil ||
-		pv.Spec.Glusterfs != nil ||
-		pv.Spec.AWSElasticBlockStore != nil {
+	if pv.Spec.NFS != nil {
 		return append(supportedActions,
 			migapi.PvCopyAction,
 			migapi.PvMoveAction)
 	}
+
+	// Move is possible only when source and destination share a storage backend, i.g., a vsphere datastore
+	srcStorageClassName := getStorageClassName(pv)
+	srcProvisioner := findProvisionerForName(srcStorageClassName, srcStorageClasses)
+	if srcProvisioner == VSphereInTreeDriverName || srcProvisioner == VSphereCSIDriverName {
+		matchingStorageClasses := len(findStorageClassesForProvisioner(VSphereInTreeDriverName, destStorageClasses)) + len(findStorageClassesForProvisioner(VSphereCSIDriverName, destStorageClasses))
+		if matchingStorageClasses > 0 {
+			return append(supportedActions,
+				migapi.PvCopyAction,
+				migapi.PvMoveAction)
+		}
+	}
+
 	for _, sc := range Settings.Plan.MoveStorageClasses {
 		if pv.Spec.StorageClassName == sc {
 			return append(supportedActions,
@@ -323,28 +335,21 @@ func (r *ReconcileMigPlan) getDefaultSelection(pv core.PersistentVolume,
 	if err != nil {
 		return migapi.Selection{}, err
 	}
-	actions := r.getSupportedActions(pv, claim)
-	selectedAction := ""
-	// if there's only one action, make that the default, otherwise select "copy" (if available)
-	if len(actions) == 1 {
-		selectedAction = actions[0]
-	} else {
-		for _, a := range actions {
-			if a == migapi.PvCopyAction {
-				selectedAction = a
-				break
-			}
-		}
+	actions := r.getSupportedActions(pv, srcStorageClasses, destStorageClasses)
+	selectedAction := actions[len(actions)-1]
+	copyMethod := ""
+	if selectedAction == migapi.PvCopyAction {
+		copyMethod = migapi.PvFilesystemCopyMethod
 	}
 	log.Info("PV Discovery: Setting default selections for discovered PV.",
 		"persistentVolume", pv.Name,
 		"pvSelectedAction", selectedAction,
 		"pvSelectedStorageClass", selectedStorageClass,
-		"pvCopyMethod", migapi.PvFilesystemCopyMethod)
+		"pvCopyMethod", copyMethod)
 	return migapi.Selection{
 		Action:       selectedAction,
 		StorageClass: selectedStorageClass,
-		CopyMethod:   migapi.PvFilesystemCopyMethod,
+		CopyMethod:   copyMethod,
 	}, nil
 }
 
@@ -354,61 +359,37 @@ func (r *ReconcileMigPlan) getDestStorageClass(pv core.PersistentVolume,
 	plan *migapi.MigPlan,
 	srcStorageClasses []migapi.StorageClass,
 	destStorageClasses []migapi.StorageClass) (string, error) {
+	if pv.Spec.NFS != nil {
+		return "", nil
+	}
 	srcStorageClassName := getStorageClassName(pv)
 
 	srcProvisioner := findProvisionerForName(srcStorageClassName, srcStorageClasses)
 	targetProvisioner := ""
 	targetStorageClassName := ""
-	warnIfTargetUnavailable := false
 
-	// For gluster src volumes, migrate to cephfs or cephrbd (warn if unavailable)
-	// For nfs src volumes, migrate to cephfs or cephrbd (no warning if unavailable)
-	if srcProvisioner == "kubernetes.io/glusterfs" ||
-		strings.HasPrefix(srcProvisioner, "gluster.org/glusterblock") ||
-		pv.Spec.Glusterfs != nil ||
-		pv.Spec.NFS != nil {
-		if isRWX(claim.AccessModes) {
-			targetProvisioner = findProvisionerForSuffix("cephfs.csi.ceph.com", destStorageClasses)
-		} else if isRWO(claim.AccessModes) {
-			targetProvisioner = findProvisionerForSuffix("rbd.csi.ceph.com", destStorageClasses)
-		} else {
-			targetProvisioner = findProvisionerForSuffix("cephfs.csi.ceph.com", destStorageClasses)
+	var matchingStorageClasses []migapi.StorageClass
+	if srcProvisioner == VSphereCSIDriverName || srcProvisioner == VSphereInTreeDriverName {
+		// CSI is prior than CSP
+		matchingStorageClasses = findStorageClassesForProvisioner(VSphereCSIDriverName, destStorageClasses)
+		if len(matchingStorageClasses) == 0 {
+			matchingStorageClasses = findStorageClassesForProvisioner(VSphereInTreeDriverName, destStorageClasses)
 		}
-		// warn for gluster but not NFS
-		if pv.Spec.NFS == nil {
-			warnIfTargetUnavailable = true
-		}
-		// For all other pvs, migrate to storage class with the same provisioner, if available
-		// FIXME: Are there any other types where we want to target a matching dynamic provisioner even if the src
-		// pv doesn't have a storage class (i.e. matching targetProvisioner based on pv.Spec.PersistentVolumeSource)?
 	} else {
 		targetProvisioner = srcProvisioner
+		matchingStorageClasses = findStorageClassesForProvisioner(targetProvisioner, destStorageClasses)
 	}
-	matchingStorageClasses := findStorageClassesForProvisioner(targetProvisioner, destStorageClasses)
 	if len(matchingStorageClasses) > 0 {
 		if findProvisionerForName(srcStorageClassName, matchingStorageClasses) != "" {
 			targetStorageClassName = srcStorageClassName
+			log.Info("Storage classes matches, select the same name storage class", "storageclass", targetStorageClassName, "pv", pv.Name)
 		} else {
 			targetStorageClassName = matchingStorageClasses[0].Name
+			log.Info("Storage classes matches, select the first one", "storageclass", targetStorageClassName, "pv", pv.Name)
 		}
 	} else {
 		targetStorageClassName = findDefaultStorageClassName(destStorageClasses)
-		// if we're using a default storage class and we need to warn
-		if targetStorageClassName != "" && warnIfTargetUnavailable {
-			existingWarnCondition := plan.Status.FindCondition(PvWarnNoCephAvailable)
-			if existingWarnCondition == nil {
-				plan.Status.SetCondition(migapi.Condition{
-					Type:     PvWarnNoCephAvailable,
-					Status:   True,
-					Category: Warn,
-					Message: "Ceph is not available on destination. If this is desired, please install the rook" +
-						" operator. The following PVs will use the default storage class instead: []",
-					Items: []string{pv.Name},
-				})
-			} else {
-				existingWarnCondition.Items = append(existingWarnCondition.Items, pv.Name)
-			}
-		}
+		log.Info("No storage class match, select the default", "storageclass", targetStorageClassName, "pv", pv.Name)
 	}
 	return targetStorageClassName, nil
 }
