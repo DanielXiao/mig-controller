@@ -1,0 +1,63 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - migrator.run.tanzu.vmware.com
+  resources:
+  - miganalytics
+  - migclusters
+  - mighooks
+  - migmigrations
+  - migplans
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - migrator.run.tanzu.vmware.com
+  resources:
+  - miganalytics/status
+  - migclusters/status
+  - mighooks/status
+  - migmigrations/status
+  - migplans/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+    - events
+  verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+- apiGroups:
+    - "authorization.k8s.io"
+  resources:
+    - selfsubjectaccessreviews
+  verbs:
+    - create

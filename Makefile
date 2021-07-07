@@ -1,5 +1,7 @@
+VERSION ?= 0.3.0
+REPO ?= gcr.io/cf-pks-releng-environments/tm/mig-controller
 # Image URL to use all building/pushing image targets
-IMG ?= quay.io/ocpmigrate/mig-controller:latest
+IMG ?= ${REPO}:${VERSION}
 GOOS ?= `go env GOOS`
 GOBIN ?= ${GOPATH}/bin
 GO111MODULE = auto
@@ -49,16 +51,22 @@ install: manifests
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
-	kubectl apply -f config/crds
+	cd config/manager && kustomize edit set image controller=${IMG}
 	kustomize build config/default | kubectl apply -f -
+
+# Generate a release
+release: manifests
+	cd config/manager && kustomize edit set image controller=${IMG}
+	kustomize build config/default > releases/tanzu-migrator-${VERSION}.yaml
 
 # Provide CRDs that work back to k8s 1.11
 CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 
 # Generate manifests e.g. CRD, Webhooks
 manifests:
-	${CONTROLLER_GEN} ${CRD_OPTIONS} crd rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crds/bases 
+	${CONTROLLER_GEN} ${CRD_OPTIONS} crd rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crds/bases
 	rm config/crds/bases/*direct*yaml
+	rm config/crds/bases/*migstorages.yaml
 	rm config/migrator.run.tanzu.vmware.com*yaml
 
 # Copy sample CRs to a new 'migsamples' directory that is in .gitignore to avoid committing SA tokens
@@ -86,8 +94,6 @@ conversion-gen:  conversion-gen-dl
 #docker-build: test
 docker-build:
 	docker build . -t ${IMG}
-	@echo "updating kustomize image patch file for manager resource"
-	sed -i'' -e 's@image: .*@image: '"${IMG}"'@' ./config/default/manager_image_patch.yaml
 
 # Push the docker image
 docker-push:

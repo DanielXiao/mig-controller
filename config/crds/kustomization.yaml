@@ -1,0 +1,6 @@
+resources:
+- bases/migrator.run.tanzu.vmware.com_miganalytics.yaml
+- bases/migrator.run.tanzu.vmware.com_migclusters.yaml
+- bases/migrator.run.tanzu.vmware.com_mighooks.yaml
+- bases/migrator.run.tanzu.vmware.com_migmigrations.yaml
+- bases/migrator.run.tanzu.vmware.com_migplans.yaml

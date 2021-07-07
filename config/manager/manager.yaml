@@ -1,83 +1,114 @@
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   labels:
-    control-plane: controller-manager
-    controller-tools.k8s.io: "1.0"
-  name: mig
+    control-plane: controller-config
+  name: controller-config
+  namespace: system
+data:
+  WORKING_DIR: /var/cache/discovery
+  GIN_MODE: release
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: migration-controller
+  namespace: system
+  labels:
+    control-plane: migration-controller
+spec:
+  selector:
+    matchLabels:
+      control-plane: migration-controller
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: migration-controller
+    spec:
+      containers:
+      - command:
+        - /home/tanzu-migrator/manager
+        image: controller:latest
+        name: manager
+        env:
+        - name: ROLE
+          value: mtc
+        envFrom:
+          - configMapRef:
+              name: controller-config
+        resources:
+          limits:
+            cpu: 2
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 500Mi
+      terminationGracePeriodSeconds: 10
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: controller-manager-service
-  namespace: openshift-migration
   labels:
-    control-plane: controller-manager
-    controller-tools.k8s.io: "1.0"
+    control-plane: discovery-controller
+  name: discovery-service
+  namespace: system
 spec:
-  selector:
-    control-plane: controller-manager
-    controller-tools.k8s.io: "1.0"
   ports:
-  - port: 443
+  - port: 80
+    targetPort: api
+    protocol: TCP
+  selector:
+    control-plane: discovery-controller
 ---
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
-  name: controller-manager
-  namespace: openshift-migration
+  name: discovery-controller
+  namespace: system
   labels:
-    control-plane: controller-manager
-    controller-tools.k8s.io: "1.0"
+    control-plane: discovery-controller
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
-      controller-tools.k8s.io: "1.0"
-  serviceName: controller-manager-service
+      control-plane: discovery-controller
+  replicas: 1
   template:
     metadata:
       labels:
-        control-plane: controller-manager
-        controller-tools.k8s.io: "1.0"
+        control-plane: discovery-controller
     spec:
       containers:
       - command:
-        - /manager
+        - /home/tanzu-migrator/manager
         image: controller:latest
-        imagePullPolicy: Always
         name: manager
+        ports:
+        - name: api
+          containerPort: 8080
         env:
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          - name: SECRET_NAME
-            value: $(WEBHOOK_SECRET_NAME)
+        - name: ROLE
+          value: discovery
+        envFrom:
+          - configMapRef:
+              name: controller-config
         resources:
           limits:
-            cpu: 100m
-            memory: 300Mi
+            cpu: 2
+            memory: 2Gi
           requests:
-            cpu: 100m
-            memory: 250Mi
-        ports:
-        - containerPort: 9876
-          name: webhook-server
-          protocol: TCP
+            cpu: 500m
+            memory: 500Mi
         volumeMounts:
-        - mountPath: /tmp/cert
-          name: cert
-          readOnly: true
-      terminationGracePeriodSeconds: 10
+        - mountPath: /var/cache/discovery
+          name: discovery
       volumes:
-      - name: cert
-        secret:
-          defaultMode: 420
-          secretName: webhook-server-secret
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: webhook-server-secret
-  namespace: openshift-migration
+      - name: discovery
+        emptyDir:
+          medium: Memory
+      terminationGracePeriodSeconds: 10
