@@ -68,4 +68,12 @@ const (
 	StagePodLabel = "migrator.run.tanzu.vmware.com/is-stage-pod"
 	// RsyncPodIdentityLabel identifies sibling Rsync attempts/pods
 	RsyncPodIdentityLabel = "migrator.run.tanzu.vmware.com/created-for-pvc"
+	// Identifies Kmotion Jobs
+	// for easy search.
+	// The value is the MigMigration.UID().
+	MigMigrationIDLabel = "migrator.run.tanzu.vmware.com/migmigration-id" // (migmigration UID)
+	// Identifies Kmotion Jobs Operation
+	// for easy search.
+	// The value is the MigMigration.UID().
+	MigMigrationOperationLabel = "migrator.run.tanzu.vmware.com/migmigration-operation"
 )

@@ -19,14 +19,15 @@ package migmigration
 import (
 	"context"
 	"fmt"
+	"github.com/konveyor/mig-controller/pkg/settings"
 	"time"
 
 	liberr "github.com/konveyor/controller/pkg/error"
 	"github.com/konveyor/controller/pkg/logging"
 	migapi "github.com/konveyor/mig-controller/pkg/apis/migration/v1alpha1"
-	"github.com/konveyor/mig-controller/pkg/errorutil"
 	migref "github.com/konveyor/mig-controller/pkg/reference"
 	"github.com/opentracing/opentracing-go"
+	batchv1 "k8s.io/api/batch/v1"
 	kapi "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -168,14 +169,6 @@ func (r *ReconcileMigMigration) Reconcile(ctx context.Context, request reconcile
 		defer reconcileSpan.Finish()
 	}
 
-	// Ensure debugging labels are present on migmigration
-	err = r.ensureDebugLabels(migration)
-	if err != nil {
-		log.Info("Error setting debug labels, requeueing.")
-		log.Trace(err)
-		return reconcile.Result{Requeue: true}, err
-	}
-
 	// Report reconcile error.
 	defer func() {
 		// Only log critical conditions.
@@ -184,22 +177,31 @@ func (r *ReconcileMigMigration) Reconcile(ctx context.Context, request reconcile
 			log.Info("CR", "critical_conditions", critConditions)
 		}
 		migration.Status.Conditions.RecordEvents(migration, r.EventRecorder)
-		if err == nil || errors.IsConflict(errorutil.Unwrap(err)) {
-			return
-		}
-		migration.Status.SetReconcileFailed(err)
-		err := r.Update(context.TODO(), migration)
-		if err != nil {
-			log.Error(err, "Error updating resource on reconcile exit.")
-			log.Trace(err)
-			return
-		}
 	}()
 
-	// Completed.
-	if migration.Status.Phase == Completed {
+	jobList := &batchv1.JobList{}
+	listOptions := []k8sclient.ListOption{
+		k8sclient.InNamespace(migration.Namespace),
+		k8sclient.MatchingLabels{
+			migapi.MigMigrationIDLabel:        string(migration.UID),
+			migapi.MigMigrationOperationLabel: migration.GetOperation(),
+		},
+	}
+	err = r.List(context.TODO(), jobList, listOptions...)
+	if err != nil {
+		log.Info("Error getting Kmotion Job, requeueing.")
+		log.Trace(err)
+		return reconcile.Result{Requeue: true}, nil
+	}
+	if len(jobList.Items) > 0 {
+		log.Info("Kmotion job already exists, skip",
+			migapi.MigMigrationIDLabel, string(migration.UID),
+			migapi.MigMigrationOperationLabel, migration.GetOperation())
 		return reconcile.Result{Requeue: false}, nil
 	}
+
+	// Ensure debugging labels are present on migmigration
+	r.ensureDebugLabels(migration)
 
 	// Owner Reference
 	err = r.setOwnerReference(migration)
@@ -221,7 +223,7 @@ func (r *ReconcileMigMigration) Reconcile(ctx context.Context, request reconcile
 	}
 
 	// Default to PollReQ, can be overridden by r.postpone() or r.migrate()
-	requeueAfter := time.Duration(PollReQ)
+	requeueAfter := NoReQ
 
 	// Ensure that migrations run serially ordered by when created
 	// and grouped with stage migrations followed by final migrations.
@@ -232,15 +234,6 @@ func (r *ReconcileMigMigration) Reconcile(ctx context.Context, request reconcile
 			log.Info("Failed to check if postpone required, requeueing")
 			log.Trace(err)
 			return reconcile.Result{Requeue: true}, err
-		}
-	}
-
-	// Migrate
-	if !migration.Status.HasBlockerCondition() {
-		requeueAfter, err = r.migrate(ctx, migration)
-		if err != nil {
-			log.Trace(err)
-			return reconcile.Result{Requeue: true}, nil
 		}
 	}
 
@@ -261,12 +254,106 @@ func (r *ReconcileMigMigration) Reconcile(ctx context.Context, request reconcile
 		return reconcile.Result{Requeue: true}, nil
 	}
 
+	// Spin up Kmotion Job
+	if !migration.Status.HasBlockerCondition() {
+		err = r.createJob(migration)
+		if err != nil {
+			log.Trace(err)
+			return reconcile.Result{Requeue: true}, nil
+		}
+	}
+
 	// Requeue
 	if requeueAfter > 0 {
 		return reconcile.Result{RequeueAfter: requeueAfter}, nil
 	}
 
 	return reconcile.Result{Requeue: false}, nil
+}
+
+func (r *ReconcileMigMigration) createJob(migration *migapi.MigMigration) error {
+	zero := int32(0)
+	trueVar := true
+	cacheVolumeName := "cache"
+	pluginsVolumeName := "plugins"
+	cacheDir := "/home/tanzu-migrator/cache"
+	pluginsDir := "/home/tanzu-migrator/plugins"
+	id := string(migration.UID)
+	kmotionJob := &batchv1.Job{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", id, migration.GetOperation()),
+			Namespace: migration.Namespace,
+			Labels: map[string]string{
+				migapi.MigMigrationIDLabel:        id,
+				migapi.MigMigrationOperationLabel: migration.GetOperation(),
+			},
+			OwnerReferences: []v1.OwnerReference{
+				{
+					APIVersion: migration.GetObjectKind().GroupVersionKind().GroupVersion().String(),
+					Kind:       migration.GetObjectKind().GroupVersionKind().Kind,
+					Name:       migration.Name,
+					UID:        migration.UID,
+					Controller: &trueVar,
+				},
+			},
+		},
+		Spec: batchv1.JobSpec{
+			BackoffLimit: &zero,
+			Template: kapi.PodTemplateSpec{
+				Spec: kapi.PodSpec{
+					RestartPolicy: kapi.RestartPolicyNever,
+					Volumes: []kapi.Volume{
+						{
+							Name: cacheVolumeName,
+							VolumeSource: kapi.VolumeSource{
+								EmptyDir: &kapi.EmptyDirVolumeSource{
+									Medium: kapi.StorageMediumMemory,
+								},
+							},
+						},
+						{
+							Name: pluginsVolumeName,
+							VolumeSource: kapi.VolumeSource{
+								EmptyDir: &kapi.EmptyDirVolumeSource{
+									Medium: kapi.StorageMediumMemory,
+								},
+							},
+						},
+					},
+					Containers: []kapi.Container{
+						{
+							Image: Settings.KMotion[settings.KmotionImage],
+							Name:  "kmotion",
+							Env: []kapi.EnvVar{
+								{
+									Name:  "MIGRATION_NAME",
+									Value: fmt.Sprintf("%s/%s", migration.Namespace, migration.Name),
+								},
+							},
+							VolumeMounts: []kapi.VolumeMount{
+								{
+									Name:      cacheVolumeName,
+									MountPath: cacheDir,
+								},
+								{
+									Name:      pluginsVolumeName,
+									MountPath: pluginsDir,
+								},
+							},
+							Command: []string{"/home/tanzu-migrator/kmotion"},
+							Args:    []string{"exec", "-p", pluginsDir, "-c", cacheDir},
+						},
+					},
+				},
+			},
+		},
+	}
+	log.Info("Create a KMotion Job", "Name", kmotionJob.Name)
+	err := r.Create(context.TODO(), kmotionJob)
+	if err != nil {
+		return liberr.Wrap(err)
+	}
+	return nil
 }
 
 // Determine if a migration should be postponed.
@@ -344,7 +431,7 @@ func (r *ReconcileMigMigration) setOwnerReference(migration *migapi.MigMigration
 		return liberr.Wrap(err)
 	}
 	if plan == nil {
-		return nil
+		return fmt.Errorf("plan %s not found", migration.Spec.MigPlanRef.Name)
 	}
 	for i := range migration.OwnerReferences {
 		ref := &migration.OwnerReferences[i]
@@ -368,23 +455,9 @@ func (r *ReconcileMigMigration) setOwnerReference(migration *migapi.MigMigration
 }
 
 // Ensures that the labels required to assist debugging are present on migmigration
-func (r *ReconcileMigMigration) ensureDebugLabels(migration *migapi.MigMigration) error {
-	if migration.Spec.MigPlanRef == nil {
-		return nil
-	}
+func (r *ReconcileMigMigration) ensureDebugLabels(migration *migapi.MigMigration) {
 	if migration.Labels == nil {
 		migration.Labels = make(map[string]string)
-	} else {
-		if value, exists := migration.Labels[migapi.MigPlanDebugLabel]; exists {
-			if value == migration.Spec.MigPlanRef.Name {
-				return nil
-			}
-		}
 	}
 	migration.Labels[migapi.MigPlanDebugLabel] = migration.Spec.MigPlanRef.Name
-	err := r.Update(context.TODO(), migration)
-	if err != nil {
-		return liberr.Wrap(err)
-	}
-	return nil
 }

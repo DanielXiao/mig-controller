@@ -13,6 +13,7 @@ metadata:
 data:
   WORKING_DIR: /var/cache/discovery
   GIN_MODE: release
+  KMOTION_IMAGE: gcr.io/cf-pks-releng-environments/tm/kmotion:0.1.0
 ---
 apiVersion: apps/v1
 kind: Deployment

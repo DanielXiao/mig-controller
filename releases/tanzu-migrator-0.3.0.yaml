@@ -1315,6 +1315,7 @@ subjects:
 apiVersion: v1
 data:
   GIN_MODE: release
+  KMOTION_IMAGE: gcr.io/cf-pks-releng-environments/tm/kmotion:0.1.0
   WORKING_DIR: /var/cache/discovery
 kind: ConfigMap
 metadata:

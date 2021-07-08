@@ -86,13 +86,6 @@ func (r ReconcileMigMigration) validate(ctx context.Context, migration *migapi.M
 		err = liberr.Wrap(err)
 	}
 
-	// Validate registries running.
-	err = r.validateRegistriesRunning(ctx, migration)
-	if err != nil {
-		log.V(4).Error(err, "Validation of running registries failed")
-		err = liberr.Wrap(err)
-	}
-
 	return nil
 }
 

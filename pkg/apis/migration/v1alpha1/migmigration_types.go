@@ -24,7 +24,11 @@ import (
 
 // Cache Indexes.
 const (
-	PlanIndexField = "planRef"
+	PlanIndexField     = "planRef"
+	ROLLBACK_OPERATION = "rollback"
+	CANCEL_OPERATION   = "cancel"
+	SYNCPV_OPERATION   = "syncPV"
+	MIGRATE_OPERATION  = "migrate"
 )
 
 // MigMigrationSpec defines the desired state of MigMigration
@@ -171,4 +175,15 @@ func (r *MigMigration) AddErrors(errors []string) {
 // HasErrors will notify about error presence on the MigMigration resource
 func (r *MigMigration) HasErrors() bool {
 	return len(r.Status.Errors) > 0
+}
+
+func (r *MigMigration) GetOperation() string {
+	if r.Spec.Rollback {
+		return ROLLBACK_OPERATION
+	} else if r.Spec.Canceled {
+		return CANCEL_OPERATION
+	} else if r.Spec.Stage {
+		return SYNCPV_OPERATION
+	}
+	return MIGRATE_OPERATION
 }

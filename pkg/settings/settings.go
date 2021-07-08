@@ -27,6 +27,8 @@ const (
 	DisableImageCopy = "DISABLE_IMAGE_COPY"
 	// Enable cached remote client
 	EnableCachedClient = "ENABLE_CACHED_CLIENT"
+	// Kmotion image
+	KmotionImage = "KMOTION_IMAGE"
 )
 
 // Global
@@ -43,6 +45,7 @@ type _Settings struct {
 	JaegerOpts
 	Roles     map[string]bool
 	ProxyVars map[string]string
+	KMotion   map[string]string
 }
 
 // Load settings.
@@ -68,6 +71,10 @@ func (r *_Settings) Load() error {
 		return err
 	}
 	err = r.loadProxyVars()
+	if err != nil {
+		return err
+	}
+	err = r.loadKMotion()
 	if err != nil {
 		return err
 	}
@@ -117,6 +124,19 @@ func (r *_Settings) loadRoles() error {
 		r.Roles[MtcRole] = true
 	}
 
+	return nil
+}
+
+//
+// Load the manager role.
+// The default is ALL roles.
+func (r *_Settings) loadKMotion() error {
+	r.KMotion = map[string]string{}
+	if s, found := os.LookupEnv(KmotionImage); found {
+		r.KMotion[KmotionImage] = s
+	} else {
+		return fmt.Errorf("environment variable %s must be set", KmotionImage)
+	}
 	return nil
 }
 
