@@ -262,19 +262,6 @@ func (r ReconcileMigPlan) validateNamespaces(ctx context.Context, plan *migapi.M
 		})
 		return nil
 	}
-	namespaces := r.validateNamespaceLengthForDVM(plan)
-	if len(namespaces) > 0 {
-		plan.Status.SetCondition(migapi.Condition{
-			Type:     NsLengthExceeded,
-			Status:   True,
-			Reason:   LengthExceeded,
-			Category: Warn,
-			Message:  fmt.Sprintf("Namespaces [] exceed 59 characters and no destination cluster route subdomain was configured. Direct Volume Migration may fail if you do not set `cluster_subdomain` value on the `MigrationController` CR."),
-			Items:    namespaces,
-		})
-		return nil
-	}
-
 	return nil
 }
 
@@ -455,20 +442,6 @@ func (r ReconcileMigPlan) validateSourceCluster(ctx context.Context, plan *migap
 		return nil
 	}
 
-	// No Registry Path
-	registryPath, err := cluster.GetRegistryPath(r)
-	if !plan.Spec.IndirectImageMigration && (err != nil || registryPath == "") {
-		plan.Status.SetCondition(migapi.Condition{
-			Type:     SourceClusterNoRegistryPath,
-			Status:   True,
-			Category: Critical,
-			Reason:   NotSet,
-			Message: fmt.Sprintf("Direct image migration is selected and the source cluster %s is missing a configured Registry Path",
-				path.Join(ref.Namespace, ref.Name)),
-		})
-		return nil
-	}
-
 	return nil
 }
 
@@ -530,20 +503,6 @@ func (r ReconcileMigPlan) validateDestinationCluster(ctx context.Context, plan *
 			Category: Critical,
 			Message: fmt.Sprintf("The referenced `dstMigClusterRef` does not have a `Ready` condition, subject: %s",
 				path.Join(plan.Spec.DestMigClusterRef.Namespace, plan.Spec.DestMigClusterRef.Name)),
-		})
-		return nil
-	}
-
-	// No Registry Path
-	registryPath, err := cluster.GetRegistryPath(r)
-	if !plan.Spec.IndirectImageMigration && (err != nil || registryPath == "") {
-		plan.Status.SetCondition(migapi.Condition{
-			Type:     DestinationClusterNoRegistryPath,
-			Status:   True,
-			Category: Critical,
-			Reason:   NotSet,
-			Message: fmt.Sprintf("Direct image migration is selected and the destination cluster %s is missing a configured Registry Path",
-				path.Join(ref.Namespace, ref.Name)),
 		})
 		return nil
 	}
@@ -632,7 +591,6 @@ func (r ReconcileMigPlan) validateSourceNamespaces(plan *migapi.MigPlan) error {
 		})
 		return nil
 	}
-	namespaces = append(namespaces, migapi.VeleroNamespace)
 	cluster, err := plan.GetSourceCluster(r)
 	if err != nil {
 		return liberr.Wrap(err)
@@ -690,44 +648,6 @@ func (r ReconcileMigPlan) validateDestinationNamespaces(plan *migapi.MigPlan) er
 			Category: Critical,
 			Message:  "Duplicate destination cluster namespaces [] in migplan.",
 			Items:    duplicates,
-		})
-		return nil
-	}
-
-	namespaces = []string{migapi.VeleroNamespace}
-	cluster, err := plan.GetDestinationCluster(r)
-	if err != nil {
-		return liberr.Wrap(err)
-	}
-	if cluster == nil || !cluster.Status.IsReady() {
-		return nil
-	}
-	client, err := cluster.GetClient(r)
-	if err != nil {
-		return liberr.Wrap(err)
-	}
-	ns := kapi.Namespace{}
-	notFound := make([]string, 0)
-	for _, name := range namespaces {
-		key := types.NamespacedName{Name: name}
-		err := client.Get(context.TODO(), key, &ns)
-		if err == nil {
-			continue
-		}
-		if k8serror.IsNotFound(err) {
-			notFound = append(notFound, name)
-		} else {
-			return liberr.Wrap(err)
-		}
-	}
-	if len(notFound) > 0 {
-		plan.Status.SetCondition(migapi.Condition{
-			Type:     NsNotFoundOnDestinationCluster,
-			Status:   True,
-			Reason:   NotFound,
-			Category: Critical,
-			Message:  "Namespaces [] not found on the destination cluster.",
-			Items:    notFound,
 		})
 		return nil
 	}
